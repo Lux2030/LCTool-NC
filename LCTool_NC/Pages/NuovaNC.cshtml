@@ -1,0 +1,314 @@
+@page "/NuovaNC"
+@{
+    Layout = null;
+    int? ncIdRoute = null;
+    if (int.TryParse(Request.Query["id"].FirstOrDefault(), out var parsedId))
+    {
+        ncIdRoute = parsedId;
+    }
+}
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ncIdRoute.HasValue ? "Revisiona" : "Nuova") Non Conformità</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/nc.css" />
+    <script>window.APP_BASE_URL = '@Url.Content("~/")';</script>
+    <script>
+        // Se sto revisionando una NC esistente, il JS la carica per id
+        window.NC_EDIT_ID = @(ncIdRoute.HasValue ? ncIdRoute.Value.ToString() : "null")
+    </script>
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-logo-dot">
+                    <img src="~/assets/Logo_TP.png" alt="TP" class="header-dot-logo" />
+                </div>
+                <h1>Non Conformità</h1>
+            </div>
+            <div class="header-right">
+                <partial name="_CurrentUserBadge" />
+                <!-- Bottone Home -->
+                <a href="@Url.Page("/Index")" class="icon-btn" title="Home">
+                    <img src="~/assets/home.png" alt="Home" />
+                </a>
+                <!-- Bottone Cerca -->
+                <a href="@Url.Page("/Archivio")" class="icon-btn" title="Cerca NC">
+                    <img src="~/assets/search.png" alt="Cerca" />
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+
+        <div class="steps">
+            <div class="stepchip active" data-step="1"><span class="num">1</span> Intestazione</div>
+            <div class="stepchip"        data-step="2"><span class="num">2</span> Dettagli NC</div>
+            <div class="stepchip"        data-step="3"><span class="num">3</span> Riepilogo</div>
+        </div>
+
+        <div id="numeroBadge" class="nc-numero-badge" style="display:none">
+            NC #<span id="ncNumeroDisplay"></span>
+        </div>
+
+        <form id="ncForm" autocomplete="off" novalidate>
+            <input type="hidden" id="ncId" />
+            <input type="hidden" id="ncNumero" />
+
+            <!-- ══ STEP 1: INTESTAZIONE ══════════════════════════ -->
+            <div class="card step-panel" id="step1">
+                <div class="card-header"><h2>Intestazione</h2></div>
+                <p class="step-desc">
+                    Compila i dati di intestazione della Non Conformità.
+                    I campi contrassegnati con asterisco (*) sono obbligatori.
+                </p>
+
+                <div style="margin-bottom:20px">
+                    <label>Numero NC <span class="req">*</span></label>
+                    <input type="text" id="numeroNcDisplay" disabled style="background:#f5f5f5;cursor:not-allowed;" />
+                    <span class="field-hint">Codice progressivo generato dal sistema (non modificabile)</span>
+                </div>
+
+                <div class="grid grid-2">
+                    <div>
+                        <label>Stato <span class="req">*</span></label>
+                        <select id="stato"><option value="">— Seleziona —</option></select>
+                    </div>
+                    <div>
+                        <label>ISO / Norma di Riferimento <span class="req">*</span>
+                            <span class="info-icon" title="Inserire il riferimento normativo ISO">ℹ</span></label>
+                        <input type="text" id="isoNorma" name="iso_x" data-field="isoNormaRiferimento"
+                               placeholder="es. ISO 9001:2015 § 8.7" maxlength="500" autocomplete="off"
+                               readonly onfocus="this.removeAttribute('readonly')" />
+                    </div>
+                </div>
+                <div class="grid grid-2">
+                    <div>
+                        <label>Item di Riferimento</label>
+                        <input type="text" id="itemRif" name="item_x" data-field="itemRiferimento"
+                               autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" />
+                    </div>
+                    <div>
+                        <label>Rilevata da <span class="req">*</span></label>
+                        <select id="rilevataDa"><option value="">— Seleziona —</option></select>
+                    </div>
+                </div>
+                <div class="grid grid-3">
+                    <div><label>Data Apertura <span class="req">*</span></label><input type="date" id="dataApertura" name="dap_x" data-field="dataApertura" /></div>
+                    <div><label>Data Prevista Chiusura <span class="req">*</span></label><input type="date" id="dataPrevistaChiusura" name="dpc_x" data-field="dataPrevistaChiusura" /></div>
+                    <div><label>Data Effettiva Chiusura</label><input type="date" id="dataEffettivaChiusura" name="dec_x" data-field="dataEffettivaChiusura" /></div>
+                </div>
+
+                <div class="step-actions">
+                    <button type="button" class="btn primary" id="btnStep1Next">Avanti →</button>
+                </div>
+            </div>
+
+            <!-- ══ STEP 2: DETTAGLI NC ═══════════════════════════ -->
+            <div class="card step-panel" id="step2" style="display:none">
+                <div class="card-header"><h2>Dettagli NC</h2></div>
+                <p class="step-desc">
+                    Compila i dettagli della Non Conformità.
+                    I campi contrassegnati con asterisco (*) sono obbligatori.
+                </p>
+                <div style="margin-bottom:20px">
+                    <label>Descrizione <span class="req">*</span></label>
+                    <textarea id="descrizione" name="desc_x" data-field="descrizione"
+                              placeholder="Descrizione della non conformità rilevata"></textarea>
+                </div>
+                <div style="margin-bottom:20px">
+                    <label>Causa <span class="req">*</span></label>
+                    <textarea id="causa" name="causa_x" data-field="causa"
+                              placeholder="Causa radice della non conformità"></textarea>
+                </div>
+                <div style="margin-bottom:20px">
+                    <label>Risoluzione</label>
+                    <textarea id="risoluzione" name="risol_x" data-field="risoluzione"
+                              placeholder="Risoluzione adottata o pianificata"></textarea>
+                </div>
+                <div style="margin-bottom:20px">
+                    <label>Azioni Correttive</label>
+                    <textarea id="azioniCorrettive" name="azioni_x" data-field="azioniCorrettive"
+                              placeholder="Azioni correttive pianificate / attuate"></textarea>
+                </div>
+                <div style="margin-bottom:20px">
+                    <label>Doc SGQ Modificati</label>
+                    <input type="text" id="docSgq" name="docsgq_x" data-field="docSgqModificati"
+                           placeholder="Documenti SGQ modificati" maxlength="1000" autocomplete="off"
+                           readonly onfocus="this.removeAttribute('readonly')" />
+                </div>
+
+                <div class="grid grid-2">
+                    <div>
+                        <label>Owner <span class="req">*</span> <small>(Invio per aggiungere)</small></label>
+                        <div class="tag-input-wrap" id="ownerWrap">
+                            <div id="ownerTags"></div>
+                            <input type="text" id="ownerInput" name="owner_x"
+                                   placeholder="Digita un nome e premi Invio…" autocomplete="new-password" />
+                        </div>
+                        <input type="hidden" id="ownerValue" data-field="owner" />
+                    </div>
+                    <div>
+                        <label>Dipartimento Coinvolto <span class="req">*</span></label>
+                        <input type="text" id="dipartimento" name="dip_x" data-field="dipartimentoCoinvolto"
+                               placeholder="Inserire il tipo di dipartimento coinvolto"
+                               maxlength="200" autocomplete="off"
+                               readonly onfocus="this.removeAttribute('readonly')" />
+                    </div>
+                </div>
+
+                <div style="margin-bottom:20px">
+                    <label>Parti Interessate <span class="req">*</span></label>
+                    <div class="parti-box" id="partiBox">
+                        <div class="pi-altri">
+                            <input type="text" id="piAltri" name="pialtri_x"
+                                   placeholder="Altre parti interessate…" maxlength="500" autocomplete="off"
+                                   readonly onfocus="this.removeAttribute('readonly')" />
+                        </div>
+                    </div>
+                    <input type="hidden" id="partiInteressateValue" data-field="partiInteressate" />
+                </div>
+
+                <div class="grid grid-2">
+                    <div style="margin-bottom:20px">
+                        <label>Cliente <small>(Invio per aggiungere)</small></label>
+                        <div class="tag-input-wrap" id="clienteWrap">
+                            <div id="clienteTags"></div>
+                            <input type="text" id="clienteInput" name="cliente_x"
+                                   placeholder="Digita un cliente e premi Invio…" autocomplete="new-password" />
+                        </div>
+                        <input type="hidden" id="clienteValue" data-field="cliente" />
+                    </div>
+                    <div style="margin-bottom:20px">
+                        <label>Sedi</label>
+                        <div class="parti-box" id="sediBox">
+                            <label class="check-label"><input type="checkbox" id="sediParcoLeonardo" data-sede="Parco Leonardo" /> Parco Leonardo</label>
+                            <label class="check-label"><input type="checkbox" id="sediTaranto" data-sede="Taranto" /> Taranto</label>
+                            <label class="check-label"><input type="checkbox" id="sediTiburtina" data-sede="Tiburtina" /> Tiburtina</label>
+                        </div>
+                        <input type="hidden" id="sediValue" data-field="sedi" />
+                    </div>
+                </div>
+
+                <div id="revizioneSection" style="display:none">
+                    <div class="section-title">Revisione</div>
+                    <div class="grid grid-2" style="margin-bottom:20px">
+                        <div>
+                            <label>Data Revisione</label>
+                            <input type="date" id="dataRevisione" name="drev_x" data-field="dataRevisione" />
+                        </div>
+                        <div></div>
+                    </div>
+                    <div style="margin-bottom:20px">
+                        <label>Note Revisione <small>(testo libero)</small></label>
+                        <textarea id="noteRevisione" name="noterev_x" data-field="noteRevisione" rows="4"
+                                  placeholder="Note di revisione"></textarea>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button type="button" class="btn secondary" id="btnStep2Back">← Indietro</button>
+                    <button type="button" class="btn primary" id="btnStep2Next">Avanti →</button>
+                </div>
+            </div>
+
+            <!-- ══ STEP 3: RIEPILOGO ══════════════════════════════ -->
+            <div class="card step-panel" id="step3" style="display:none">
+                <div class="card-header"><h2>Riepilogo</h2></div>
+                <p class="step-desc">Verifica i dati inseriti prima di salvare la Non Conformità.</p>
+
+                <div class="recap-section">
+                    <div class="recap-head">
+                        <h3>Intestazione</h3>
+                        <button type="button" class="btn secondary btn-sm" onclick="goToStep(1)">Modifica</button>
+                    </div>
+                    <div class="recap-grid">
+                        <div class="recap-kv"><span class="k">Numero NC</span><span class="v" id="r_numeroNc">—</span></div>
+                        <div class="recap-kv"><span class="k">Stato</span><span class="v" id="r_stato">—</span></div>
+                        <div class="recap-kv"><span class="k">ISO / Norma</span><span class="v" id="r_iso">—</span></div>
+                        <div class="recap-kv"><span class="k">Item di Riferimento</span><span class="v" id="r_item">—</span></div>
+                        <div class="recap-kv"><span class="k">Rilevata da</span><span class="v" id="r_rilevata">—</span></div>
+                        <div class="recap-kv"><span class="k">Data Apertura</span><span class="v" id="r_dataAp">—</span></div>
+                        <div class="recap-kv"><span class="k">Data Prevista Chiusura</span><span class="v" id="r_dataPrev">—</span></div>
+                        <div class="recap-kv"><span class="k">Data Effettiva Chiusura</span><span class="v" id="r_dataEff">—</span></div>
+                    </div>
+                </div>
+
+                <div class="recap-section">
+                    <div class="recap-head">
+                        <h3>Dettagli</h3>
+                        <button type="button" class="btn secondary btn-sm" onclick="goToStep(2)">Modifica</button>
+                    </div>
+                    <div class="recap-grid">
+                        <div class="recap-kv recap-full"><span class="k">Descrizione</span><span class="v" id="r_desc">—</span></div>
+                        <div class="recap-kv recap-full"><span class="k">Causa</span><span class="v" id="r_causa">—</span></div>
+                        <div class="recap-kv recap-full"><span class="k">Risoluzione</span><span class="v" id="r_risol">—</span></div>
+                        <div class="recap-kv recap-full"><span class="k">Azioni Correttive</span><span class="v" id="r_azioni">—</span></div>
+                        <div class="recap-kv"><span class="k">Doc SGQ Modificati</span><span class="v" id="r_docsgq">—</span></div>
+                        <div class="recap-kv"><span class="k">Owner</span><span class="v" id="r_owner">—</span></div>
+                        <div class="recap-kv"><span class="k">Dipartimento Coinvolto</span><span class="v" id="r_dip">—</span></div>
+                        <div class="recap-kv"><span class="k">Parti Interessate</span><span class="v" id="r_parti">—</span></div>
+                        <div class="recap-kv"><span class="k">Cliente</span><span class="v" id="r_cliente">—</span></div>
+                        <div class="recap-kv"><span class="k">Sedi</span><span class="v" id="r_sedi">—</span></div>
+                    </div>
+                </div>
+
+                <div id="riepilogoRevizioneSection" style="display:none">
+                    <div class="recap-section">
+                        <div class="recap-head">
+                            <h3>Revisione</h3>
+                            <button type="button" class="btn secondary btn-sm" onclick="goToStep(2)">Modifica</button>
+                        </div>
+                        <div class="recap-grid">
+                            <div class="recap-kv"><span class="k">Data Revisione</span><span class="v" id="r_dataRev">—</span></div>
+                            <div class="recap-kv recap-full"><span class="k">Note Revisione</span><span class="v" id="r_noteRev">—</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button type="button" class="btn secondary" id="btnStep3Back">← Indietro</button>
+                    <button type="button" class="btn primary" id="btnSalva">💾 Salva</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Pannello di SUCCESSO (mostrato dopo salvataggio) -->
+        <div id="panelSuccesso" style="display:none">
+            <div class="card" style="max-width:600px;margin:60px auto;text-align:center;padding:60px 48px;">
+                <div style="margin-bottom:24px">
+                    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#111"
+                         stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
+                    </svg>
+                </div>
+                <h2 id="homeTitolo" style="font-size:22px;font-weight:700;margin-bottom:12px;color:#111">
+                    Operazione completata
+                </h2>
+                <p style="color:#666;font-size:15px;margin-bottom:32px;">
+                    La Non Conformità è stata salvata correttamente.
+                </p>
+                <div style="display:flex;gap:12px;justify-content:center;">
+                    <a href="@Url.Page("/Archivio")" class="btn secondary">🔍 Vai all'Archivio</a>
+                    <a href="@Url.Page("/NuovaNC")" class="btn primary">+ Nuova NC</a>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="~/js/nc-common.js"></script>
+    <script src="~/js/nuova-nc.js"></script>
+</body>
+</html>

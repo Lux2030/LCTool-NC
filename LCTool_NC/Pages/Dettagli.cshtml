@@ -1,0 +1,61 @@
+@page "/Dettagli"
+@{
+    Layout = null;
+    var id = Convert.ToInt32(Request.Query["id"].FirstOrDefault() ?? "0");
+}
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dettagli Non Conformità</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/nc.css" />
+    <script>window.APP_BASE_URL = '@Url.Content("~/")';</script>
+    <script>window.NC_ID = @id;</script>
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-logo-dot">
+                    <img src="~/assets/Logo_TP.png" alt="TP" class="header-dot-logo" />
+                </div>
+                <h1>Non Conformità</h1>
+            </div>
+            <div class="header-right">
+                <partial name="_CurrentUserBadge" />
+                <!-- Bottone Torna indietro (Dettagli → Archivio) -->
+                <a href="@Url.Page("/Archivio")" class="icon-btn" title="Torna indietro">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                         stroke="white" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5M12 5l-7 7 7 7"/>
+                    </svg>
+                </a>
+                <!-- Bottone Home -->
+                <a href="@Url.Page("/Index")" class="icon-btn" title="Home">
+                    <img src="~/assets/home.png" alt="Home" />
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="dettagli-topbar">
+            <span id="dettagliTitolo" class="dettagli-titolo">Caricamento…</span>
+        </div>
+        <div class="card">
+            <div class="dettagli-preview" id="dettagliContent"></div>
+        </div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="~/js/nc-common.js"></script>
+    <script src="~/js/dettagli.js"></script>
+</body>
+</html>

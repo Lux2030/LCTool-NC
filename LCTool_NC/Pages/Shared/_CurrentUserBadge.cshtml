@@ -1,0 +1,34 @@
+@inject LCTool_NC.Services.CurrentUserService CurrentUserService
+@{
+    var headerCurrentUserRaw = CurrentUserService.GetCurrentUser() ?? string.Empty;
+    var headerDisplayUser = headerCurrentUserRaw.Trim();
+
+    // Toglie eventuale prefisso "DOMINIO\" o "DOMINIO/"
+    var domainSeparatorIndex = Math.Max(headerDisplayUser.LastIndexOf('\\'), headerDisplayUser.LastIndexOf('/'));
+    if (domainSeparatorIndex >= 0 && domainSeparatorIndex < headerDisplayUser.Length - 1)
+    {
+        headerDisplayUser = headerDisplayUser.Substring(domainSeparatorIndex + 1);
+    }
+
+    // Toglie eventuale dominio email "@xxx"
+    var emailSeparatorIndex = headerDisplayUser.IndexOf('@');
+    if (emailSeparatorIndex > 0)
+    {
+        headerDisplayUser = headerDisplayUser.Substring(0, emailSeparatorIndex);
+    }
+
+    if (string.IsNullOrWhiteSpace(headerDisplayUser))
+    {
+        headerDisplayUser = "Utente";
+    }
+}
+
+<div class="header-user" title="@headerCurrentUserRaw" aria-label="Utente corrente: @headerDisplayUser">
+    <span class="header-user-avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4Z"></path>
+            <path d="M4.5 20.25c.75-3.25 3.72-5.5 7.5-5.5s6.75 2.25 7.5 5.5"></path>
+        </svg>
+    </span>
+    <span class="header-user-name">@headerDisplayUser</span>
+</div>

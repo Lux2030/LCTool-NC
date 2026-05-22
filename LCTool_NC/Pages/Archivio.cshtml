@@ -1,0 +1,138 @@
+@page "/Archivio"
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Archivio Non Conformità</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/nc.css" />
+    <script>window.APP_BASE_URL = '@Url.Content("~/")'; </script>
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-logo-dot">
+                    <img src="~/assets/Logo_TP.png" alt="TP" class="header-dot-logo" />
+                </div>
+                <h1>Non Conformità</h1>
+            </div>
+            <div class="header-right">
+                <partial name="_CurrentUserBadge" />
+                <!-- Bottone Home -->
+                <a href="@Url.Page("/Index")" class="icon-btn" title="Home">
+                    <img src="~/assets/home.png" alt="Home" />
+                </a>
+                <!-- Bottone Nuova NC -->
+                <a href="@Url.Page("/NuovaNC")" class="icon-btn" title="Nuova Non Conformità">
+                    <img src="~/assets/new-document.png" alt="Nuova NC" />
+                </a>
+                <!-- Bottone Counter (totale NC) -->
+                <span class="pill-btn counter-btn" id="btnCounter" title="Archivio NC" style="display:none">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                    </svg>
+                    <span id="ncCount">0</span> NC
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="archivio-header">
+            <h2>Archivio Non Conformità</h2>
+            <p class="archivio-sub">Filtra le Non Conformità usando i campi sottostanti.</p>
+
+            <div style="background:white;border-radius:12px;padding:20px 24px;
+                        margin-bottom:24px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:6px;">Numero NC</label>
+                        <input type="text" id="filtroNumero" placeholder="Es. 12"
+                               style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:6px;">Stato</label>
+                        <select id="filtroStato"
+                                style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;background:white;box-sizing:border-box;">
+                            <option value="">— Tutti —</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:6px;">Rilevata da</label>
+                        <select id="filtroRilevataDa"
+                                style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;background:white;box-sizing:border-box;">
+                            <option value="">— Tutte —</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:6px;">Responsabile (Owner)</label>
+                        <input type="text" id="filtroOwner" placeholder="Es. Mario Rossi"
+                               style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:6px;">Aperta dal</label>
+                        <input type="date" id="filtroDataDal"
+                               style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:#444;margin-bottom:6px;">Aperta al</label>
+                        <input type="date" id="filtroDataAl"
+                               style="width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;" />
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                    <button class="btn primary"   id="btnRicerca">🔍 Ricerca</button>
+                    <button class="btn secondary" id="btnPulisci">Pulisci filtri</button>
+                    <button class="btn secondary" id="btnAggiorna">Aggiorna</button>
+                    <button class="btn secondary" id="btnEsportaExcel" title="Esporta in Excel (CSV)">📊 Esporta Excel</button>
+                    <button class="btn secondary" id="btnEsportaPDF"   title="Esporta in PDF">📄 Esporta PDF</button>
+                    <span id="risultatiCount" style="margin-left:auto;font-size:13px;color:#666;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabella elenco NC -->
+        <div style="background:white;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+            <table class="nc-table">
+                <thead>
+                    <tr>
+                        <th>NC #</th>
+                        <th>Stato</th>
+                        <th>ISO / Norma</th>
+                        <th>Rilevata da</th>
+                        <th>Data Apertura</th>
+                        <th>Owner</th>
+                        <th>Creato da</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="archivioTabella">
+                    <tr><td colspan="8" style="text-align:center;padding:40px;color:#999">Caricamento…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="~/js/nc-common.js"></script>
+    <script src="~/js/archivio.js"></script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+@page "/"
+@inject LCTool_NC.Services.CurrentUserService CurrentUserService
+@{
+    Layout = null;
+
+    // Nome utente "pulito" per il saluto (es. "A1124apulia")
+    var currentUserRaw = CurrentUserService.GetCurrentUser() ?? string.Empty;
+    var currentUser = currentUserRaw.Trim();
+    var domainSeparatorIndex = Math.Max(currentUser.LastIndexOf('\\'), currentUser.LastIndexOf('/'));
+    if (domainSeparatorIndex >= 0 && domainSeparatorIndex < currentUser.Length - 1)
+    {
+        currentUser = currentUser.Substring(domainSeparatorIndex + 1);
+    }
+    var emailSeparatorIndex = currentUser.IndexOf('@');
+    if (emailSeparatorIndex > 0)
+    {
+        currentUser = currentUser.Substring(0, emailSeparatorIndex);
+    }
+    if (string.IsNullOrWhiteSpace(currentUser))
+    {
+        currentUser = "Utente";
+    }
+}
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home – Non Conformità</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/nc.css" />
+    <script>window.APP_BASE_URL = '@Url.Content("~/")';</script>
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <div class="header-logo-dot">
+                    <img src="~/assets/Logo_TP.png" alt="TP" class="header-dot-logo" />
+                </div>
+                <h1>Non Conformità</h1>
+            </div>
+            <div class="header-right">
+                <partial name="_CurrentUserBadge" />
+                <!-- Bottone Nuova NC -->
+                <a href="@Url.Page("/NuovaNC")" class="icon-btn" title="Nuova Non Conformità">
+                    <img src="~/assets/new-document.png" alt="Nuova NC" />
+                </a>
+                <!-- Bottone Cerca -->
+                <a href="@Url.Page("/Archivio")" class="icon-btn" title="Cerca NC">
+                    <img src="~/assets/search.png" alt="Cerca" />
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="welcome-card">
+            <div class="welcome-label">BENVENUTO</div>
+            <h1 class="welcome-title">Ciao, @currentUser</h1>
+            <p class="welcome-desc">
+                Da qui puoi creare una nuova Non Conformità oppure cercare
+                o revisionare le Non Conformità già compilate.
+            </p>
+        </div>
+    </main>
+
+</body>
+</html>
