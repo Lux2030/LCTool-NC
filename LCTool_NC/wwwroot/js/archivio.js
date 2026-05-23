@@ -14,6 +14,7 @@ function bindEvents() {
     document.getElementById('btnAggiorna').addEventListener('click', loadArchivio);
     document.getElementById('btnEsportaExcel').addEventListener('click', esportaExcel);
     document.getElementById('btnEsportaPDF').addEventListener('click', esportaPDF);
+    document.getElementById('btnDataRetention').addEventListener('click', dataRetention);
 }
 
 async function popolaFiltriDropdown() {
@@ -134,6 +135,54 @@ async function eliminaNC(id, numero) {
     }
 }
 
+// ── DATA RETENTION ────────────────────────────────────────────────────────────
+async function dataRetention() {
+    const GIORNI = 365;
+    const limite = new Date();
+    limite.setDate(limite.getDate() - GIORNI);
+
+    // Trova NC chiuse con dataEffettivaChiusura > 365 giorni fa
+    const daEliminare = allNcList.filter(nc => {
+        if ((nc.stato || '').toLowerCase() !== 'chiusa') return false;
+        if (!nc.dataEffettivaChiusura) return false;
+        return new Date(nc.dataEffettivaChiusura) < limite;
+    });
+
+    if (!daEliminare.length) {
+        alert(`✅ Nessuna NC da eliminare.\n\nNon esistono NC chiuse da più di ${GIORNI} giorni.`);
+        return;
+    }
+
+    const elenco = daEliminare
+        .map(nc => `  • NC ${formatNumeroNC(nc.numero)} — chiusa il ${fmtDate(nc.dataEffettivaChiusura)}`)
+        .join('\n');
+
+    const conferma = confirm(
+        `🗃️ DATA RETENTION — ${GIORNI} giorni\n\n` +
+        `Verranno eliminate ${daEliminare.length} NC chiuse da più di ${GIORNI} giorni:\n\n` +
+        `${elenco}\n\n` +
+        `⚠️ L'operazione NON può essere annullata.\nConfermi?`
+    );
+    if (!conferma) return;
+
+    let eliminate = 0;
+    let errori = 0;
+    for (const nc of daEliminare) {
+        try {
+            const res = await fetch(API_NC_BY_ID(nc.id), { method: 'DELETE' });
+            if (res.ok) eliminate++;
+            else errori++;
+        } catch { errori++; }
+    }
+
+    if (errori === 0) {
+        toast(`🗃️ Data Retention completata: ${eliminate} NC eliminate`, 'success');
+    } else {
+        toast(`⚠️ Completata con errori: ${eliminate} eliminate, ${errori} fallite`, 'error');
+    }
+    await loadArchivio();
+}
+
 // ── EXPORT EXCEL ─────────────────────────────────────────────────────────────
 function esportaExcel() {
     const rows = getExportRows();
@@ -242,7 +291,6 @@ function esportaPDF() {
 }
 
 function getExportRows() {
-    // Usa i dati filtrati correnti
     const numero  = document.getElementById('filtroNumero').value.trim().toLowerCase();
     const stato   = document.getElementById('filtroStato').value.toLowerCase();
     const rilev   = document.getElementById('filtroRilevataDa').value.toLowerCase();
