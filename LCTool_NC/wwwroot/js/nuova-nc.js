@@ -379,9 +379,10 @@ async function salvaForm() {
     const id = document.getElementById('ncId').value;
     const data = await collectForm();
     try {
+        // Fix errore 405: usa POST /update invece di PUT (WebDAV su IIS blocca PUT)
         const res = id
-            ? await fetch(API_NC_BY_ID(id), { method:'PUT',  headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) })
-            : await fetch(API_NC,           { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+            ? await fetch(API_NC_UPDATE(id), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) })
+            : await fetch(API_NC,             { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const saved = await res.json();
 

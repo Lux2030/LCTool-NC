@@ -80,6 +80,7 @@ public class NonConformitaController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
+    // PUT standard (per ambienti senza WebDAV)
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, [FromBody] NonConformita nc)
     {
@@ -88,10 +89,67 @@ public class NonConformitaController : ControllerBase
         return updated == null ? NotFound() : Ok(updated);
     }
 
+    // POST alternativo per fix errore 405 su IIS/IIS Express con WebDAV attivo
+    [HttpPost("{id:int}/update")]
+    public async Task<IActionResult> UpdateViaPost(int id, [FromBody] NonConformita nc)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var updated = await _service.UpdateAsync(id, nc);
+        return updated == null ? NotFound() : Ok(updated);
+    }
+
+    // DELETE standard
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
         var deleted = await _service.DeleteAsync(id);
         return deleted ? NoContent() : NotFound();
+    }
+
+    // POST alternativo per fix errore 405 su IIS/IIS Express con WebDAV attivo
+    [HttpPost("{id:int}/delete")]
+    public async Task<IActionResult> DeleteViaPost(int id)
+    {
+        var deleted = await _service.DeleteAsync(id);
+        return deleted ? NoContent() : NotFound();
+    }
+
+    // ── DATA RETENTION ──────────────────────────────────────────────────────
+    // Elimina le NC chiuse più vecchie di N giorni (configurabile in appsettings)
+    [HttpPost("data-retention")]
+    public async Task<IActionResult> EseguiDataRetention()
+    {
+        var giorni = _db.Database.GetDbConnection().ConnectionString.Contains("LCToolDb") ? 3650 : 3650;
+        var config = HttpContext.RequestServices.GetService<IConfiguration>();
+        if (int.TryParse(config?["DataRetention:GiorniConservazione"], out var g) && g > 0)
+            giorni = g;
+
+        var soglia = DateTime.Now.AddDays(-giorni);
+        var daEliminare = await _db.NonConformita
+            .Where(nc => nc.Stato == "Chiusa" && nc.DataEffettivaChiusura.HasValue
+                      && nc.DataEffettivaChiusura.Value < soglia)
+            .ToListAsync();
+
+        _db.NonConformita.RemoveRange(daEliminare);
+        await _db.SaveChangesAsync();
+
+        return Ok(new { eliminate = daEliminare.Count, soglia = soglia.ToString("dd/MM/yyyy") });
+    }
+
+    [HttpGet("data-retention/anteprima")]
+    public async Task<IActionResult> AnteprimaDataRetention()
+    {
+        var config = HttpContext.RequestServices.GetService<IConfiguration>();
+        var giorni = 3650;
+        if (int.TryParse(config?["DataRetention:GiorniConservazione"], out var g) && g > 0)
+            giorni = g;
+
+        var soglia = DateTime.Now.AddDays(-giorni);
+        var count = await _db.NonConformita
+            .Where(nc => nc.Stato == "Chiusa" && nc.DataEffettivaChiusura.HasValue
+                      && nc.DataEffettivaChiusura.Value < soglia)
+            .CountAsync();
+
+        return Ok(new { count, giorni, soglia = soglia.ToString("dd/MM/yyyy") });
     }
 }

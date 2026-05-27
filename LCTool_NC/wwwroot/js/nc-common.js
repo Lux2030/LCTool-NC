@@ -13,6 +13,10 @@ window.API_NC_RILEVATA_DA = appUrl('api/nonconformita/rilevata-da');
 window.API_NC_PARTI       = appUrl('api/nonconformita/parti-interessate');
 window.API_NC_PROSSIMO    = appUrl('api/nonconformita/prossimo-numero');
 window.API_NC_BY_ID       = (id) => appUrl(`api/nonconformita/${id}`);
+window.API_NC_UPDATE      = (id) => appUrl(`api/nonconformita/${id}/update`);
+window.API_NC_DELETE_POST = (id) => appUrl(`api/nonconformita/${id}/delete`);
+window.API_NC_DR_PREVIEW  = appUrl('api/nonconformita/data-retention/anteprima');
+window.API_NC_DR_RUN      = appUrl('api/nonconformita/data-retention');
 
 window.todayISO = function () {
     return new Date().toISOString().split('T')[0];

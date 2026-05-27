@@ -93,7 +93,8 @@ function renderDettagli(nc) {
 async function eliminaNC(id, numero) {
     if (!confirm(`Sei sicuro di voler eliminare la NC ${formatNumeroNC(numero)}?\nL'operazione non può essere annullata.`)) return;
     try {
-        const res = await fetch(API_NC_BY_ID(id), { method: 'DELETE' });
+        // Fix errore 405: usa POST /delete invece di DELETE (WebDAV su IIS blocca DELETE)
+        const res = await fetch(API_NC_DELETE_POST(id), { method: 'POST' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         toast('NC eliminata con successo', 'success');
         setTimeout(() => { window.location.href = appUrl('Archivio'); }, 1200);

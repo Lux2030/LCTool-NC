@@ -14,7 +14,6 @@ function bindEvents() {
     document.getElementById('btnAggiorna').addEventListener('click', loadArchivio);
     document.getElementById('btnEsportaExcel').addEventListener('click', esportaExcel);
     document.getElementById('btnEsportaPDF').addEventListener('click', esportaPDF);
-    document.getElementById('btnDataRetention').addEventListener('click', dataRetention);
 }
 
 async function popolaFiltriDropdown() {
@@ -126,61 +125,14 @@ function renderTabellaNC(list) {
 async function eliminaNC(id, numero) {
     if (!confirm(`Sei sicuro di voler eliminare la NC ${formatNumeroNC(numero)}?\nL'operazione non può essere annullata.`)) return;
     try {
-        const res = await fetch(API_NC_BY_ID(id), { method: 'DELETE' });
+        // Fix errore 405: usa POST /delete invece di DELETE (WebDAV su IIS blocca DELETE)
+        const res = await fetch(API_NC_DELETE_POST(id), { method: 'POST' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         toast('NC eliminata con successo', 'success');
         await loadArchivio();
     } catch (err) {
         toast('Errore durante eliminazione: ' + err.message, 'error');
     }
-}
-
-// ── DATA RETENTION ────────────────────────────────────────────────────────────
-async function dataRetention() {
-    const GIORNI = 365;
-    const limite = new Date();
-    limite.setDate(limite.getDate() - GIORNI);
-
-    // Trova NC chiuse con dataEffettivaChiusura > 365 giorni fa
-    const daEliminare = allNcList.filter(nc => {
-        if ((nc.stato || '').toLowerCase() !== 'chiusa') return false;
-        if (!nc.dataEffettivaChiusura) return false;
-        return new Date(nc.dataEffettivaChiusura) < limite;
-    });
-
-    if (!daEliminare.length) {
-        alert(`✅ Nessuna NC da eliminare.\n\nNon esistono NC chiuse da più di ${GIORNI} giorni.`);
-        return;
-    }
-
-    const elenco = daEliminare
-        .map(nc => `  • NC ${formatNumeroNC(nc.numero)} — chiusa il ${fmtDate(nc.dataEffettivaChiusura)}`)
-        .join('\n');
-
-    const conferma = confirm(
-        `🗃️ DATA RETENTION — ${GIORNI} giorni\n\n` +
-        `Verranno eliminate ${daEliminare.length} NC chiuse da più di ${GIORNI} giorni:\n\n` +
-        `${elenco}\n\n` +
-        `⚠️ L'operazione NON può essere annullata.\nConfermi?`
-    );
-    if (!conferma) return;
-
-    let eliminate = 0;
-    let errori = 0;
-    for (const nc of daEliminare) {
-        try {
-            const res = await fetch(API_NC_BY_ID(nc.id), { method: 'DELETE' });
-            if (res.ok) eliminate++;
-            else errori++;
-        } catch { errori++; }
-    }
-
-    if (errori === 0) {
-        toast(`🗃️ Data Retention completata: ${eliminate} NC eliminate`, 'success');
-    } else {
-        toast(`⚠️ Completata con errori: ${eliminate} eliminate, ${errori} fallite`, 'error');
-    }
-    await loadArchivio();
 }
 
 // ── EXPORT EXCEL ─────────────────────────────────────────────────────────────
@@ -291,6 +243,7 @@ function esportaPDF() {
 }
 
 function getExportRows() {
+    // Usa i dati filtrati correnti
     const numero  = document.getElementById('filtroNumero').value.trim().toLowerCase();
     const stato   = document.getElementById('filtroStato').value.toLowerCase();
     const rilev   = document.getElementById('filtroRilevataDa').value.toLowerCase();
@@ -318,4 +271,36 @@ function parseSediExport(json) {
         const arr = JSON.parse(json || '[]');
         return Array.isArray(arr) ? arr.join(', ') : '';
     } catch { return ''; }
+}
+
+// ── DATA RETENTION ────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('btnDataRetention');
+    if (btn) btn.addEventListener('click', eseguiDataRetention);
+});
+
+async function eseguiDataRetention() {
+    try {
+        // Prima mostra anteprima
+        const prev = await (await fetch(API_NC_DR_PREVIEW)).json();
+        if (prev.count === 0) {
+            toast(`Nessuna NC da eliminare (soglia: NC chiuse prima del ${prev.soglia})`, 'success');
+            return;
+        }
+        const conferma = confirm(
+            `Data Retention — Riepilogo:\n\n` +
+            `• Verranno eliminate ${prev.count} NC chiuse\n` +
+            `• Soglia: chiuse prima del ${prev.soglia} (${prev.giorni} giorni)\n\n` +
+            `L'operazione è IRREVERSIBILE. Continuare?`
+        );
+        if (!conferma) return;
+
+        const res = await fetch(API_NC_DR_RUN, { method: 'POST' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const result = await res.json();
+        toast(`Data Retention completata: ${result.eliminate} NC eliminate (chiuse prima del ${result.soglia})`, 'success');
+        await loadArchivio();
+    } catch (err) {
+        toast('Errore Data Retention: ' + err.message, 'error');
+    }
 }
